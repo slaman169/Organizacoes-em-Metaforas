@@ -1,0 +1,510 @@
+/* RESET */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: #081B3C;
+    color: white;
+    font-family: "Manrope", Arial, sans-serif;
+}
+
+
+/* IMAGEM NO LUGAR DO SEMAC */
+
+.semac {
+    height: 90px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-image: url("imagens/rodape.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+
+    font-size: 0;
+    color: transparent;
+}
+
+
+/* HERO */
+
+.hero {
+    height: 600px;
+    background-image: url("imagens/banner.jpg");
+    background-size: cover;
+    background-position: center;
+    position: relative;
+
+    mask-image: linear-gradient(
+        to bottom,
+        black 75%,
+        transparent 100%
+    );
+}
+
+.hero-texto {
+    position: absolute;
+    left: 7%;
+    bottom: 80px;
+    transition: opacity 0.2s;
+}
+
+.hero-texto h1 {
+    font-family: "Archivo Black", sans-serif;
+    font-size: clamp(45px, 7vw, 110px);
+    line-height: 0.95;
+    font-weight: 400;
+}
+
+
+/* SETA */
+
+.seta {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 35px;
+    animation: subirDescer 1s infinite alternate;
+}
+
+@keyframes subirDescer {
+
+    from {
+        transform: translate(-50%, 0);
+    }
+
+    to {
+        transform: translate(-50%, 10px);
+    }
+
+}
+
+
+/* GALERIA */
+
+.galeria {
+    padding: 60px 5%;
+}
+
+.galeria-titulo {
+    margin-bottom: 40px;
+}
+
+.galeria-titulo h2 {
+    font-family: "Archivo Black", sans-serif;
+    font-size: 40px;
+}
+
+.linha {
+    height: 2px;
+    background-color: white;
+    margin-top: 10px;
+}
+
+.estrelas {
+    margin-top: 12px;
+    letter-spacing: 5px;
+}
+
+
+/* CARDS */
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
+}
+
+.card {
+    aspect-ratio: 3 / 4;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+
+    background-color: #10294B;
+
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+}
+
+
+/* IMAGENS DOS CARDS */
+
+.card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1s;
+}
+
+.card-img.ativa {
+    opacity: 1;
+}
+
+
+/* GRADIENTE */
+
+.card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.9),
+        rgba(0, 0, 0, 0.4) 30%,
+        transparent 75%
+    );
+
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+
+.card:hover::after {
+    opacity: 1;
+}
+
+
+/* NOME DA EMPRESA */
+
+.card-nome {
+    position: absolute;
+    bottom: 15px;
+    left: 12px;
+    right: 12px;
+    z-index: 2;
+
+    font-weight: 800;
+    font-size: 15px;
+    text-align: center;
+
+    opacity: 0;
+    transform: translateY(10px);
+
+    transition: opacity 0.4s, transform 0.4s;
+}
+
+.card:hover .card-nome {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+/* MODAL */
+
+.modal {
+    position: fixed;
+    inset: 0;
+
+    background-color: rgba(2, 8, 22, 0.85);
+    backdrop-filter: blur(8px);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    opacity: 0;
+    visibility: hidden;
+
+    transition: opacity 0.3s, visibility 0.3s;
+
+    z-index: 999;
+}
+
+.modal.aberto {
+    opacity: 1;
+    visibility: visible;
+}
+
+
+/* CONTEÚDO DO MODAL */
+
+.modal-conteudo {
+    width: 100%;
+    max-width: 1500px;
+    height: 90vh;
+
+    background-color: #10294B;
+
+    border-radius: 12px;
+
+    padding: 60px 50px 50px;
+
+    overflow-y: auto;
+
+    position: relative;
+}
+
+
+/* BOTÃO FECHAR */
+
+.modal-fechar {
+    position: sticky;
+    top: 0;
+    float: right;
+
+    z-index: 10;
+
+    width: 45px;
+    height: 45px;
+
+    background-color: rgba(0, 0, 0, 0.3);
+
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+
+    border-radius: 50%;
+
+    font-size: 18px;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: background-color 0.3s;
+}
+
+.modal-fechar:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+
+/* CABEÇALHO DA EMPRESA */
+
+.grupo-cabecalho {
+    text-align: center;
+    margin-bottom: 60px;
+    padding: 10px 20px;
+}
+
+.grupo-cabecalho h1 {
+    font-family: "Archivo Black", sans-serif;
+    font-size: clamp(35px, 5vw, 70px);
+    line-height: 1.1;
+}
+
+
+/* SEÇÕES DOS MONSTROS */
+
+.grupo-secao {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+
+    gap: 50px;
+
+    align-items: start;
+
+    padding: 20px 0 100px;
+
+    min-height: 600px;
+}
+
+
+/* NOME DO MONSTRO */
+
+.grupo-titulo-monstro {
+    grid-column: 1 / -1;
+
+    text-align: center;
+
+    margin-bottom: 10px;
+}
+
+.grupo-titulo-monstro h2 {
+    font-family: "Archivo Black", sans-serif;
+
+    font-size: clamp(28px, 4vw, 50px);
+
+    font-weight: 400;
+
+    line-height: 1.2;
+}
+
+
+/* IMAGEM */
+
+.grupo-imagem {
+    position: sticky;
+    top: 20px;
+}
+
+.grupo-imagem img {
+    width: 100%;
+    max-height: 75vh;
+
+    object-fit: contain;
+
+    border-radius: 8px;
+}
+
+
+/* TEXTOS */
+
+.grupo-texto {
+    padding: 10px 0;
+}
+
+.topico {
+    margin-bottom: 35px;
+}
+
+.topico h3 {
+    font-size: 23px;
+    font-weight: 800;
+
+    margin-bottom: 12px;
+
+    padding-bottom: 8px;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.topico p {
+    font-size: 17px;
+    line-height: 1.9;
+}
+
+
+/* BLOQUEAR ROLAGEM DO FUNDO */
+
+body.modal-aberto {
+    overflow: hidden;
+}
+
+
+/* TABLETS */
+
+@media (max-width: 1000px) {
+
+    .cards {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .grupo-secao {
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+
+}
+
+
+/* CELULARES */
+
+@media (max-width: 600px) {
+
+    /* IMAGEM SEMAC */
+
+    .semac {
+        height: 70px;
+        background-size: contain;
+    }
+
+
+    /* HERO */
+
+    .hero {
+        height: 450px;
+    }
+
+    .hero-texto {
+        left: 5%;
+        bottom: 70px;
+    }
+
+
+    /* GALERIA */
+
+    .galeria {
+        padding: 40px 5%;
+    }
+
+    .cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+
+    /* CARDS */
+
+    .card-nome {
+        opacity: 1;
+        transform: translateY(0);
+        font-size: 13px;
+    }
+
+    .card::after {
+        opacity: 1;
+    }
+
+
+    /* MODAL MOBILE */
+
+    .modal-conteudo {
+        width: 100%;
+        height: 100vh;
+
+        border-radius: 0;
+
+        padding: 70px 20px 30px;
+    }
+
+    .grupo-cabecalho {
+        margin-bottom: 40px;
+    }
+
+    .grupo-secao {
+        display: flex;
+        flex-direction: column;
+
+        gap: 25px;
+
+        padding-bottom: 70px;
+
+        min-height: auto;
+    }
+
+    .grupo-titulo-monstro {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .grupo-imagem {
+        position: static;
+        width: 100%;
+    }
+
+    .grupo-imagem img {
+        max-height: none;
+        width: 100%;
+    }
+
+    .grupo-texto {
+        width: 100%;
+    }
+
+    .topico h3 {
+        font-size: 20px;
+    }
+
+    .topico p {
+        font-size: 16px;
+    }
+
+}
