@@ -1,0 +1,1337 @@
+
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Organizações e Metáforas</title>
+
+    <!-- FONTES -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- FIREBASE (banco de dados das curtidas e comentários) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+    <!-- =================================================================== -->
+    <!-- ESTILO DOS TÓPICOS EXPANSÍVEIS, CURTIDAS E COMENTÁRIOS               -->
+    <!-- (ficam aqui dentro de propósito, para funcionar mesmo se o           -->
+    <!-- style.css estiver desatualizado)                                     -->
+    <!-- =================================================================== -->
+    <style>
+        .topico {
+            margin-bottom: 18px !important;
+            background-color: rgba(0, 0, 0, 0.14) !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            overflow: hidden !important;
+            transition: background-color 0.25s, border-color 0.25s;
+        }
+
+        .topico:hover {
+            background-color: rgba(0, 0, 0, 0.22) !important;
+            border-color: rgba(255, 255, 255, 0.35) !important;
+        }
+
+        /* BOTÃO DO TÓPICO (título + círculo) */
+        .topico-cabecalho {
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 16px !important;
+            background: transparent !important;
+            border: none !important;
+            color: white !important;
+            font-family: inherit !important;
+            text-align: left !important;
+            padding: 18px 20px !important;
+            cursor: pointer !important;
+        }
+
+        .topico-cabecalho h3 {
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1.3;
+        }
+
+        /* CÍRCULO PULSANTE NA EXTREMIDADE DIREITA */
+        .indicador-pulso {
+            position: relative !important;
+            display: block !important;
+            flex-shrink: 0 !important;
+            width: 14px !important;
+            height: 14px !important;
+            border-radius: 50% !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.75) !important;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        .indicador-pulso::after {
+            content: "" !important;
+            position: absolute !important;
+            top: -5px !important;
+            left: -5px !important;
+            right: -5px !important;
+            bottom: -5px !important;
+            border-radius: 50% !important;
+            border: 2px solid rgba(255, 255, 255, 0.85) !important;
+            animation: pulsarCirculo 1.8s infinite ease-out !important;
+        }
+
+        @keyframes pulsarCirculo {
+            0%   { transform: scale(0.75); opacity: 0.95; }
+            70%  { transform: scale(1.75); opacity: 0; }
+            100% { transform: scale(1.75); opacity: 0; }
+        }
+
+        /* TEXTO: COMEÇA ESCONDIDO (ALTURA 0) */
+        .topico-conteudo {
+            display: block !important;
+            max-height: 0 !important;
+            overflow: hidden !important;
+            transition: max-height 0.45s ease;
+        }
+
+        .topico-conteudo-interno {
+            overflow: hidden;
+        }
+
+        .topico-conteudo-interno p {
+            font-size: 16.5px;
+            line-height: 1.85;
+            padding: 16px 20px 20px !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        /* QUANDO O TÓPICO ESTÁ ABERTO (depois do clique) */
+        .topico.aberto {
+            background-color: rgba(0, 0, 0, 0.25) !important;
+            border-color: rgba(255, 255, 255, 0.45) !important;
+        }
+
+        .topico.aberto .topico-conteudo {
+            max-height: 3000px !important;
+        }
+
+        .topico.aberto .indicador-pulso {
+            transform: scale(0.85);
+            background-color: rgba(255, 255, 255, 0.55) !important;
+            box-shadow: none !important;
+        }
+
+        .topico.aberto .indicador-pulso::after {
+            animation: none !important;
+            opacity: 0 !important;
+        }
+
+
+        /* ============================ CURTIDAS ============================ */
+
+        .btn-like {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 14px auto 0;
+            padding: 10px 24px;
+            background: rgba(0, 0, 0, 0.25);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 999px;
+            font-family: inherit;
+            font-size: 17px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: background-color 0.25s, border-color 0.25s, transform 0.15s;
+        }
+
+        .btn-like:hover {
+            background: rgba(0, 0, 0, 0.45);
+        }
+
+        .btn-like:active {
+            transform: scale(0.95);
+        }
+
+        .btn-like .coracao {
+            font-size: 22px;
+            line-height: 1;
+            transition: transform 0.2s, color 0.2s;
+        }
+
+        .btn-like.curtido {
+            background: rgba(255, 90, 110, 0.22);
+            border-color: #ff5a6e;
+        }
+
+        .btn-like.curtido .coracao {
+            color: #ff5a6e;
+            transform: scale(1.15);
+        }
+
+        @media (min-width: 601px) {
+            .grupo-imagem img {
+                max-height: 65vh !important;
+            }
+        }
+
+
+        /* =========================== COMENTÁRIOS =========================== */
+
+        .comentarios-secao {
+            max-width: 900px;
+            margin: 10px auto 0;
+            padding-top: 40px;
+            border-top: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .comentarios-secao h2 {
+            font-family: "Archivo Black", sans-serif;
+            font-weight: 400;
+            font-size: clamp(26px, 3.5vw, 40px);
+            margin-bottom: 8px;
+        }
+
+        .comentarios-secao .comentarios-sub {
+            font-size: 15px;
+            opacity: 0.85;
+            margin-bottom: 22px;
+        }
+
+        .aviso-teste {
+            font-size: 14px;
+            background: rgba(255, 200, 80, 0.2);
+            border: 1px solid rgba(255, 200, 80, 0.6);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .form-comentario {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .form-comentario input,
+        .form-comentario textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-family: inherit;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.25s, background-color 0.25s;
+        }
+
+        .form-comentario textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .form-comentario input:focus,
+        .form-comentario textarea:focus {
+            border-color: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .form-comentario ::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .btn-comentar {
+            align-self: flex-start;
+            padding: 12px 28px;
+            background: #ffffff;
+            color: #2c3e50;
+            border: none;
+            border-radius: 999px;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: opacity 0.25s, transform 0.15s;
+        }
+
+        .btn-comentar:hover {
+            opacity: 0.88;
+        }
+
+        .btn-comentar:active {
+            transform: scale(0.97);
+        }
+
+        .btn-comentar:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        .comentario {
+            background: rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+        }
+
+        .comentario-topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+
+        .comentario-nome {
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        .comentario-data {
+            font-size: 13px;
+            opacity: 0.7;
+        }
+
+        .comentario-texto {
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .sem-comentarios {
+            opacity: 0.8;
+            font-size: 16px;
+            padding: 10px 0 30px;
+        }
+
+        @media (max-width: 600px) {
+            .topico-cabecalho {
+                padding: 15px 16px !important;
+            }
+
+            .topico-cabecalho h3 {
+                font-size: 18px;
+            }
+
+            .topico-conteudo-interno p {
+                font-size: 15.5px;
+                padding: 14px 16px 18px !important;
+            }
+
+            .btn-comentar {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SEMAC -->
+    <div class="semac">
+        SEMAC
+    </div>
+
+    <!-- BANNER -->
+    <section class="hero">
+
+        <div class="hero-texto">
+            <h1>
+                ORGANIZAÇÕES<br>
+                E METÁFORAS
+            </h1>
+        </div>
+
+        <div class="seta">
+            ↓
+        </div>
+
+    </section>
+
+    <!-- GALERIA -->
+    <section class="galeria">
+
+        <div class="galeria-titulo">
+            <h2>CARDS</h2>
+            <div class="linha"></div>
+            <div class="estrelas">✦ ✦ ✦</div>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- PONTO 1 DE EDIÇÃO: CARDS DA TELA INICIAL                       -->
+        <!-- Troque apenas o texto dentro de <div class="card-nome">         -->
+        <!-- =============================================================== -->
+        <div class="cards">
+
+            <!-- CARD 1 -->
+            <div class="card" data-id="grupo1">
+                <img src="imagens/cards/grupo1a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo1b.jpg" class="card-img">
+                <div class="card-nome">Empresa 1</div>
+            </div>
+
+            <!-- CARD 2 -->
+            <div class="card" data-id="grupo2">
+                <img src="imagens/cards/grupo2a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo2b.jpg" class="card-img">
+                <div class="card-nome">Empresa 2</div>
+            </div>
+
+            <!-- CARD 3 -->
+            <div class="card" data-id="grupo3">
+                <img src="imagens/cards/grupo3a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo3b.jpg" class="card-img">
+                <div class="card-nome">Empresa 3</div>
+            </div>
+
+            <!-- CARD 4 -->
+            <div class="card" data-id="grupo4">
+                <img src="imagens/cards/grupo4a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo4b.jpg" class="card-img">
+                <div class="card-nome">Empresa 4</div>
+            </div>
+
+            <!-- CARD 5 -->
+            <div class="card" data-id="grupo5">
+                <img src="imagens/cards/grupo5a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo5b.jpg" class="card-img">
+                <div class="card-nome">Empresa 5</div>
+            </div>
+
+            <!-- CARD 6 -->
+            <div class="card" data-id="grupo6">
+                <img src="imagens/cards/grupo6a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo6b.jpg" class="card-img">
+                <div class="card-nome">Empresa 6</div>
+            </div>
+
+            <!-- CARD 7 - ELECTRONIC ARTS -->
+            <div class="card" data-id="grupo7">
+                <img src="imagens/cards/grupo7a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo7b.jpg" class="card-img">
+                <div class="card-nome">Electronic Arts</div>
+            </div>
+
+            <!-- CARD 8 -->
+            <div class="card" data-id="grupo8">
+                <img src="imagens/cards/grupo8a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo8b.jpg" class="card-img">
+                <div class="card-nome">Empresa 8</div>
+            </div>
+
+            <!-- CARD 9 -->
+            <div class="card" data-id="grupo9">
+                <img src="imagens/cards/grupo9a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo9b.jpg" class="card-img">
+                <div class="card-nome">Empresa 9</div>
+            </div>
+
+            <!-- CARD 10 -->
+            <div class="card" data-id="grupo10">
+                <img src="imagens/cards/grupo10a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo10b.jpg" class="card-img">
+                <div class="card-nome">Empresa 10</div>
+            </div>
+
+            <!-- CARD 11 -->
+            <div class="card" data-id="grupo11">
+                <img src="imagens/cards/grupo11a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo11b.jpg" class="card-img">
+                <div class="card-nome">Empresa 11</div>
+            </div>
+
+            <!-- CARD 12 -->
+            <div class="card" data-id="grupo12">
+                <img src="imagens/cards/grupo12a.jpg" class="card-img ativa">
+                <img src="imagens/cards/grupo12b.jpg" class="card-img">
+                <div class="card-nome">Empresa 12</div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- MODAL -->
+    <div class="modal" id="modal">
+
+        <div class="modal-conteudo">
+
+            <button class="modal-fechar" id="fechar-modal">
+                X
+            </button>
+
+            <div id="conteudo-grupo"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- JAVASCRIPT -->
+    <script>
+
+        // =========================================================================
+        // PONTO 0 DE EDIÇÃO: CONFIGURAÇÃO DO FIREBASE (CURTIDAS E COMENTÁRIOS REAIS)
+        // Já está preenchida com os dados do seu projeto.
+        // =========================================================================
+
+       const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyAYiWUuuoflaFQ4eVPXtMhPJCGdjeufmLY",
+    authDomain: "organizacoesemmetaforas-e6997.firebaseapp.com",
+    projectId: "organizacoesemmetaforas-e6997",
+    storageBucket: "organizacoesemmetaforas-e6997.firebasestorage.app",
+    messagingSenderId: "311926308719",
+    appId: "1:311926308719:web:8a4f6024ff1875a457f29a"
+};
+
+
+        // =========================================================================
+        // PONTO 2 DE EDIÇÃO: CONTEÚDOS DE CADA GRUPO (MONSTROS, TÍTULOS E TEXTOS)
+        // Preencha apenas dentro das aspas "". O site monta o modal sozinho!
+        // =========================================================================
+
+        const dadosGrupos = {
+            grupo1: {
+                empresa: "Empresa 1",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo1a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo1b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo2: {
+                empresa: "Empresa 2",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo2a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo2b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo3: {
+                empresa: "Empresa 3",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo3a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo3b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo4: {
+                empresa: "Empresa 4",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo4a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo4b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo5: {
+                empresa: "Empresa 5",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo5a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo5b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo6: {
+                empresa: "Empresa 6",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo6a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo6b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo7: {
+                empresa: "Electronic Arts",
+                monstros: [
+                    {
+                        nome: "THE CASHTRAP",
+                        imagem: "grupo7a.jpg",
+                        topicos: [
+                            { titulo: "TEIAS CONTROLADORAS", texto: "As teias de Cashtrap ilustra a assimetria de poder presente na relação entre a organização e seu consumidor. Sob a ótica da metáfora das organizações como Instrumentos de Dominação (Morgan, 1996), a empresa deixa de atuar apenas como fornecedora de entretenimento para exercer um domínio sutil sobre o comportamento do público, moldando desejos e induzindo o consumo contínuo. Em diálogo com a teoria de sistemas políticos e a sociologia do poder de Max Weber, observa-se uma dominação racional-legal exercida por meio de termos de serviço, algoritmos de retenção e contratos digitais. O jogador acredita escolher livremente suas ações dentro do ecossistema virtual, mas sua autonomia é condicionada por diretrizes corporativas que subordinam a experiência lúdica aos interesses econômicos da corporação." },
+                            { titulo: "VISOR HIPNÓTICO", texto: "O visor acoplado aos olhos do personagem materializa a metáfora das Prisões Psíquicas (Morgan, 1996), demonstrando como os indivíduos podem ficar aprisionados por construções ideológicas e armadilhas cognitivas alimentadas pela própria organização. A EA cultiva uma cultura organizacional voltada para o mercado que explora o hype, a nostalgia e o pertencimento social para cegar o senso crítico do consumidor. À luz da Abordagem Comportamental e da Escola das Relações Humanas, percebe-se que a empresa manipula necessidades psicológicas e emocionais, como status e reconhecimento, para criar um estado de alienação. O visor bloqueia a percepção das falhas estruturais dos produtos, mantendo o cliente hipnotizado por promessas de marketing e ciclos incessantes de consumo simbólico." },
+                            { titulo: "MONTANTE DE VELHAS MEDALHAS", texto: "A montanha de medalhas desgastadas e envelhecidas simboliza a erosão dos princípios da Gestão da Qualidade Total (GQT) e do foco na excelência técnica preconizados por teóricos como Deming e Juran. Na lógica produtiva da EA, o valor intrínseco da obra e a satisfação genuína do usuário foram substituídos por recompensas artificiais e sistemas de pay-to-win. Sob a metáfora da Cultura (Morgan, 1996), os artefatos simbólicos de mérito e conquista dentro dos jogos perderam sua autenticidade, tornando-se meros gatilhos de monetização. A medalha velha evidencia que o prestígio vendido ao jogador é uma fachada: a organização prioriza a aparência de sucesso e a extração de lucro rápido em detrimento da melhoria contínua e da entrega de um produto íntegro." },
+                            { titulo: "CARTÃO DE CRÉDITO", texto: "O cartão de crédito empunhado pela marionete reflete a aplicação extrema da racionalidade instrumental e da busca pela máxima Eficiência financeira, conceitos centrais na Administração Científica de Taylor e na Teoria Clássica de Fayol. Contudo, a EA distorce esses fundamentos ao tratar o cliente não como um sujeito de direitos, mas como um insumo produtivo, uma fonte inesgotável de receita recorrente por meio de microtransações e loot boxes. Pela lente dos Instrumentos de Dominação (Morgan, 1996), o indivíduo é reduzido à sua capacidade de gerar fluxo de caixa para os acionistas. Essa visão utilitarista esvazia a dimensão humana da relação de consumo, transformando o entretenimento em um mecanismo automatizado de transferência de capital." },
+                            { titulo: "CORPO OXIDADO", texto: "As pernas compostas por fios expostos, falhas e estruturas incompletas traduzem a metáfora das organizações como Máquinas (Morgan, 1996) e expõem as Disfunções da Burocracia analisadas por Robert Merton. Ao operar sob uma lógica mecanicista rígida, pautada por cronogramas inflexíveis e metas financeiras trimestrais, a EA sacrifica a flexibilidade criativa e o controle de processos. O resultado é a entrega de jogos inacabados e repletos de bugs, onde a padronização excessiva e a pressa produtiva geram ineficiência operacional. Assim, o cliente é forçado a sustentar uma estrutura organizacional defeituosa, assumindo o ônus de financiar a correção de falhas que decorrem da própria rigidez gerencial da empresa." }
+                        ]
+                    },
+                    {
+                        nome: "THE PAYMASTER",
+                        imagem: "grupo7b.jpg",
+                        topicos: [
+                            { titulo: "CABEÇAS IDÊNTICAS", texto: "As várias cabeças idênticas de Paymaster, todas com a marca da EA, representam a repetição de franquias e o lançamento frequente de jogos semelhantes. Um exemplo disso são os jogos de futebol da empresa, que recebem novas versões praticamente todos os anos, muitas vezes com poucas mudanças significativas em relação às anteriores. Essa prática pode ser relacionada à metáfora das organizações como máquinas, apresentada por Gareth Morgan (1996), na qual a padronização e a repetição são utilizadas para manter a produtividade e os resultados. Na imagem, as cabeças semelhantes mostram justamente essa ideia: a empresa continua reproduzindo os mesmos produtos, com pequenas alterações, transformando franquias conhecidas em fontes constantes de lucro." },
+                            { titulo: "ANTENA NA CAUDA", texto: "A antena localizada na ponta do rabo de Paymaster representa os serviços online e o controle que a EA possui sobre suas próprias plataformas e servidores. Muitos jogos da empresa dependem dessa estrutura para oferecer determinadas funcionalidades. O problema é que, com o lançamento de novos títulos, os jogos antigos podem perder suporte ou até ter seus servidores encerrados, prejudicando quem já comprou o produto. Essa situação pode ser relacionada à metáfora das organizações como instrumentos de dominação, de Morgan (1996), pois a empresa concentra o controle sobre uma estrutura da qual os consumidores dependem. Assim como a antena transmite sinais, a representação mostra como a EA mantém o controle sobre o ambiente digital, podendo limitar o acesso e a continuidade da experiência dos jogadores." },
+                            { titulo: "ENERGIA VERDE", texto: "A forma como Paymaster se alimenta da energia verde de uma pessoa representa a forma como a EA consegue extrair dinheiro dos consumidores por meio de diferentes mecanismos de pagamento. Mesmo depois de comprar um jogo, o jogador pode encontrar diversos conteúdos adicionais pagos, como DLCs, expansões e passes de temporada. Com isso, o valor inicialmente pago pelo produto pode aumentar bastante para quem deseja aproveitar todos os recursos disponíveis. A situação se relaciona à metáfora das organizações como instrumentos de dominação, apresentada por Morgan (1996), pois evidencia como os interesses financeiros da empresa podem se sobrepor aos interesses dos consumidores. Na imagem, a energia sendo retirada da pessoa representa justamente essa exploração financeira, enquanto a criatura simboliza uma empresa que parece nunca estar satisfeita com o que já recebeu." },
+                            { titulo: "PERSONAGEM COM UMA MOEDA DE OURO", texto: "A pessoa caída no chão, segurando uma peça de ouro, representa o jogador que acaba prejudicado por uma experiência em que o dinheiro pode fazer diferença no desempenho. Em jogos como EA Sports FC, por exemplo, jogadores que investem dinheiro em pacotes e recursos podem conseguir equipes mais fortes, criando vantagens em relação àqueles que preferem não gastar. Essa prática é conhecida como Pay-to-Win e pode tornar a competição menos equilibrada. A situação pode ser relacionada à metáfora das organizações como sistemas políticos, de Morgan (1996), que mostra como as relações de poder e os interesses de determinados grupos influenciam a distribuição de recursos e oportunidades. Na imagem, o jogador caído representa quem fica em desvantagem, enquanto o ouro simboliza o dinheiro que pode determinar quem terá melhores condições dentro do jogo." },
+                            { titulo: "PINGENTE DE DIAMANTE", texto: "A pessoa menor tentando alcançar o diamante preso ao pescoço de Paymaster representa o desejo dos jogadores de conseguir recompensas raras por meio das loot boxes e dos pacotes aleatórios. Em jogos como EA Sports FC, o consumidor paga por pacotes sem saber exatamente quais jogadores ou itens irá receber. Isso cria uma expectativa de conseguir algo valioso, incentivando novas tentativas e, consequentemente, mais gastos. O mecanismo apresenta semelhanças com os jogos de azar, pois utiliza a expectativa de uma recompensa incerta para estimular o consumo. Essa situação pode ser relacionada à metáfora das organizações como instrumentos de dominação, de Morgan (1996), considerando como a empresa utiliza esses mecanismos para influenciar o comportamento dos consumidores. Na imagem, o diamante representa o prêmio desejado, enquanto a pessoa tentando alcançá-lo simboliza o jogador que continua buscando essa recompensa." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo8: {
+                empresa: "Empresa 8",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo8a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo8b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo9: {
+                empresa: "Empresa 9",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo9a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo9b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo10: {
+                empresa: "Empresa 10",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo10a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo10b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo11: {
+                empresa: "Empresa 11",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo11a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo11b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            },
+
+            grupo12: {
+                empresa: "Empresa 12",
+                monstros: [
+                    {
+                        nome: "Monstro 1",
+                        imagem: "grupo12a.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    },
+                    {
+                        nome: "Monstro 2",
+                        imagem: "grupo12b.jpg",
+                        topicos: [
+                            { titulo: "Tópico 1", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 2", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 3", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 4", texto: "O conteúdo explicativo deste tópico será inserido aqui." },
+                            { titulo: "Tópico 5", texto: "O conteúdo explicativo deste tópico será inserido aqui." }
+                        ]
+                    }
+                ]
+            }
+        };
+
+
+        // =========================================================================
+        // CÓDIGO DO FUNCIONAMENTO DO SITE (NÃO PRECISA MEXER DAQUI PARA BAIXO)
+        // =========================================================================
+
+        // ---------- BANCO DE DADOS (FIREBASE OU MODO DE TESTE) ----------
+
+        let bancoFirestore = null;
+        const configPreenchida = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf("COLE_AQUI") === -1;
+
+        if (configPreenchida && window.firebase) {
+            try {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                bancoFirestore = firebase.firestore();
+            } catch (erro) {
+                console.error("Erro ao iniciar o Firebase:", erro);
+            }
+        }
+
+        const modoOnline = bancoFirestore !== null;
+
+
+        // Funções de apoio para guardar coisas no navegador
+        function lerLocal(chave, padrao) {
+            try {
+                const valor = localStorage.getItem(chave);
+                return valor ? JSON.parse(valor) : padrao;
+            } catch (erro) {
+                return padrao;
+            }
+        }
+
+        function salvarLocal(chave, valor) {
+            try {
+                localStorage.setItem(chave, JSON.stringify(valor));
+            } catch (erro) { }
+        }
+
+
+        // ----- Armazenamento do MODO DE TESTE (só neste navegador) -----
+
+        const ouvintesLocais = {};
+
+        function registrarOuvinte(chave, funcao) {
+            ouvintesLocais[chave] = ouvintesLocais[chave] || [];
+            ouvintesLocais[chave].push(funcao);
+            funcao();
+            return () => {
+                ouvintesLocais[chave] = ouvintesLocais[chave].filter(f => f !== funcao);
+            };
+        }
+
+        function avisarOuvintes(chave) {
+            (ouvintesLocais[chave] || []).forEach(funcao => funcao());
+        }
+
+        const armazenamentoLocal = {
+            ouvirCurtidas(idGrupo, retorno) {
+                const chave = "sm_curtidas_" + idGrupo;
+                return registrarOuvinte(chave, () => {
+                    const d = lerLocal(chave, {});
+                    retorno({ 0: Math.max(d.likes_0 || 0, 0), 1: Math.max(d.likes_1 || 0, 0) });
+                });
+            },
+
+            async mudarCurtida(idGrupo, indice, delta) {
+                const chave = "sm_curtidas_" + idGrupo;
+                const d = lerLocal(chave, {});
+                d["likes_" + indice] = Math.max((d["likes_" + indice] || 0) + delta, 0);
+                salvarLocal(chave, d);
+                avisarOuvintes(chave);
+            },
+
+            ouvirComentarios(idGrupo, retorno) {
+                const chave = "sm_comentarios_" + idGrupo;
+                return registrarOuvinte(chave, () => {
+                    const lista = lerLocal(chave, []);
+                    lista.sort((a, b) => b.criadoEm - a.criadoEm);
+                    retorno(lista);
+                });
+            },
+
+            async enviarComentario(idGrupo, nome, texto) {
+                const chave = "sm_comentarios_" + idGrupo;
+                const lista = lerLocal(chave, []);
+                lista.push({ nome: nome, texto: texto, criadoEm: Date.now() });
+                salvarLocal(chave, lista);
+                avisarOuvintes(chave);
+            }
+        };
+
+
+        // ----- Armazenamento REAL (Firebase Firestore, todo mundo vê) -----
+
+        const armazenamentoFirebase = {
+            ouvirCurtidas(idGrupo, retorno) {
+                return bancoFirestore.collection("cards").doc(idGrupo).onSnapshot(doc => {
+                    const d = doc.exists ? doc.data() : {};
+                    retorno({ 0: Math.max(d.likes_0 || 0, 0), 1: Math.max(d.likes_1 || 0, 0) });
+                }, erro => console.error("Erro nas curtidas:", erro));
+            },
+
+            async mudarCurtida(idGrupo, indice, delta) {
+                await bancoFirestore.collection("cards").doc(idGrupo).set(
+                    { ["likes_" + indice]: firebase.firestore.FieldValue.increment(delta) },
+                    { merge: true }
+                );
+            },
+
+            ouvirComentarios(idGrupo, retorno) {
+                return bancoFirestore
+                    .collection("cards").doc(idGrupo)
+                    .collection("comentarios")
+                    .orderBy("criadoEm", "desc")
+                    .limit(200)
+                    .onSnapshot(snapshot => {
+                        const lista = snapshot.docs.map(doc => {
+                            const d = doc.data({ serverTimestamps: "estimate" });
+                            return {
+                                nome: d.nome,
+                                texto: d.texto,
+                                criadoEm: d.criadoEm ? d.criadoEm.toMillis() : Date.now()
+                            };
+                        });
+                        retorno(lista);
+                    }, erro => console.error("Erro nos comentários:", erro));
+            },
+
+            async enviarComentario(idGrupo, nome, texto) {
+                await bancoFirestore
+                    .collection("cards").doc(idGrupo)
+                    .collection("comentarios")
+                    .add({
+                        nome: nome,
+                        texto: texto,
+                        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+            }
+        };
+
+        const armazenamento = modoOnline ? armazenamentoFirebase : armazenamentoLocal;
+
+
+        // ---------- EFEITO DO TEXTO DO BANNER AO ROLAR A PÁGINA ----------
+        const heroTexto = document.querySelector(".hero-texto");
+
+        window.addEventListener("scroll", function () {
+            const scroll = window.scrollY;
+            heroTexto.style.opacity = Math.max(1 - scroll / 500, 0);
+        });
+
+
+        // ---------- ALTERNÂNCIA DAS IMAGENS DOS CARDS ----------
+        const cards = document.querySelectorAll(".card");
+
+        cards.forEach(card => {
+            const imagens = card.querySelectorAll(".card-img");
+            let atual = 0;
+
+            setInterval(() => {
+                imagens[atual].classList.remove("ativa");
+                atual = (atual + 1) % imagens.length;
+                imagens[atual].classList.add("ativa");
+            }, 4000);
+        });
+
+
+        // ---------- MODAL ----------
+        const modal = document.getElementById("modal");
+        const conteudoGrupo = document.getElementById("conteudo-grupo");
+        const fecharModal = document.getElementById("fechar-modal");
+
+
+        // ---------- CURTIDAS ----------
+
+        let ultimasContagens = { 0: 0, 1: 0 };
+        let encerradoresAtivos = [];
+
+        function pararOuvintes() {
+            encerradoresAtivos.forEach(encerrar => {
+                try { encerrar(); } catch (erro) { }
+            });
+            encerradoresAtivos = [];
+        }
+
+        // Guarda no navegador quais imagens ESTA pessoa já curtiu (para não curtir duas vezes)
+        function jaCurti(idGrupo, indice) {
+            return !!lerLocal("sm_meus_likes", {})[idGrupo + "_" + indice];
+        }
+
+        function marcarCurti(idGrupo, indice, valor) {
+            const meus = lerLocal("sm_meus_likes", {});
+            if (valor) {
+                meus[idGrupo + "_" + indice] = true;
+            } else {
+                delete meus[idGrupo + "_" + indice];
+            }
+            salvarLocal("sm_meus_likes", meus);
+        }
+
+        function desenharCurtidas(idGrupo) {
+            conteudoGrupo.querySelectorAll(".btn-like").forEach(botao => {
+                const indice = Number(botao.dataset.indice);
+                const curtido = jaCurti(idGrupo, indice);
+
+                botao.querySelector(".like-count").textContent = ultimasContagens[indice] || 0;
+                botao.querySelector(".coracao").textContent = curtido ? "♥" : "♡";
+                botao.classList.toggle("curtido", curtido);
+                botao.setAttribute("aria-pressed", curtido ? "true" : "false");
+            });
+        }
+
+        function ativarCurtidas(idGrupo) {
+            ultimasContagens = { 0: 0, 1: 0 };
+
+            conteudoGrupo.querySelectorAll(".btn-like").forEach(botao => {
+                const indice = Number(botao.dataset.indice);
+
+                botao.addEventListener("click", async () => {
+                    if (botao.dataset.ocupado === "1") return;
+                    botao.dataset.ocupado = "1";
+
+                    const estavaCurtido = jaCurti(idGrupo, indice);
+                    const delta = estavaCurtido ? -1 : 1;
+
+                    // Marca na hora para o coração responder rápido
+                    marcarCurti(idGrupo, indice, !estavaCurtido);
+                    desenharCurtidas(idGrupo);
+
+                    try {
+                        await armazenamento.mudarCurtida(idGrupo, indice, delta);
+                    } catch (erro) {
+                        console.error("Erro ao curtir:", erro);
+                        marcarCurti(idGrupo, indice, estavaCurtido);
+                        desenharCurtidas(idGrupo);
+                        alert("Não foi possível registrar a curtida agora. Tente novamente.");
+                    }
+
+                    botao.dataset.ocupado = "0";
+                });
+            });
+
+            encerradoresAtivos.push(
+                armazenamento.ouvirCurtidas(idGrupo, contagens => {
+                    ultimasContagens = contagens;
+                    desenharCurtidas(idGrupo);
+                })
+            );
+        }
+
+
+        // ---------- COMENTÁRIOS ----------
+
+        function formatarData(milissegundos) {
+            try {
+                return new Date(milissegundos).toLocaleString("pt-BR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                });
+            } catch (erro) {
+                return "";
+            }
+        }
+
+        function desenharComentarios(lista) {
+            const caixa = document.getElementById("lista-comentarios");
+            const titulo = document.getElementById("titulo-comentarios");
+            if (!caixa) return;
+
+            caixa.innerHTML = "";
+            if (titulo) {
+                titulo.textContent = lista.length > 0 ? "Comentários (" + lista.length + ")" : "Comentários";
+            }
+
+            if (lista.length === 0) {
+                const vazio = document.createElement("p");
+                vazio.className = "sem-comentarios";
+                vazio.textContent = "Ainda não há comentários. Seja a primeira pessoa a comentar!";
+                caixa.appendChild(vazio);
+                return;
+            }
+
+            // Usa textContent (e não innerHTML) para ninguém conseguir injetar código no site
+            lista.forEach(item => {
+                const comentario = document.createElement("div");
+                comentario.className = "comentario";
+
+                const topo = document.createElement("div");
+                topo.className = "comentario-topo";
+
+                const nome = document.createElement("span");
+                nome.className = "comentario-nome";
+                nome.textContent = item.nome;
+
+                const data = document.createElement("span");
+                data.className = "comentario-data";
+                data.textContent = formatarData(item.criadoEm);
+
+                topo.appendChild(nome);
+                topo.appendChild(data);
+
+                const texto = document.createElement("p");
+                texto.className = "comentario-texto";
+                texto.textContent = item.texto;
+
+                comentario.appendChild(topo);
+                comentario.appendChild(texto);
+                caixa.appendChild(comentario);
+            });
+        }
+
+        function ativarComentarios(idGrupo) {
+            const formulario = document.getElementById("form-comentario");
+            const campoNome = document.getElementById("comentario-nome");
+            const campoTexto = document.getElementById("comentario-texto");
+            const botaoEnviar = document.getElementById("botao-comentar");
+
+            formulario.addEventListener("submit", async (evento) => {
+                evento.preventDefault();
+
+                const nome = campoNome.value.trim();
+                const texto = campoTexto.value.trim();
+                if (!nome || !texto) return;
+
+                botaoEnviar.disabled = true;
+                botaoEnviar.textContent = "Enviando...";
+
+                try {
+                    await armazenamento.enviarComentario(idGrupo, nome, texto);
+                    campoTexto.value = "";
+                } catch (erro) {
+                    console.error("Erro ao comentar:", erro);
+                    alert("Não foi possível enviar o comentário agora. Tente novamente.");
+                }
+
+                botaoEnviar.disabled = false;
+                botaoEnviar.textContent = "Comentar";
+            });
+
+            encerradoresAtivos.push(
+                armazenamento.ouvirComentarios(idGrupo, desenharComentarios)
+            );
+        }
+
+
+        // ---------- ABRIR GRUPO ----------
+        function abrirGrupo(idGrupo) {
+            const dados = dadosGrupos[idGrupo];
+
+            if (!dados) return;
+
+            pararOuvintes();
+
+            const htmlMonstros = dados.monstros.map((monstro, indiceMonstro) => {
+                const htmlTopicos = monstro.topicos.map(topico => `
+                    <div class="topico">
+                        <button type="button" class="topico-cabecalho" aria-expanded="false">
+                            <h3>${topico.titulo}</h3>
+                            <span class="indicador-pulso" aria-hidden="true"></span>
+                        </button>
+                        <div class="topico-conteudo">
+                            <div class="topico-conteudo-interno">
+                                <p>${topico.texto}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join("");
+
+                return `
+                    <section class="grupo-secao">
+                        <div class="grupo-titulo-monstro">
+                            <h2>${monstro.nome}</h2>
+                        </div>
+
+                        <div class="grupo-imagem">
+                            <img src="imagens/cards/${monstro.imagem}" alt="${monstro.nome}">
+                            <button type="button" class="btn-like" data-indice="${indiceMonstro}" aria-pressed="false" aria-label="Curtir ${monstro.nome}">
+                                <span class="coracao" aria-hidden="true">♡</span>
+                                <span class="like-count">0</span>
+                            </button>
+                        </div>
+
+                        <div class="grupo-texto">
+                            ${htmlTopicos}
+                        </div>
+                    </section>
+                `;
+            }).join("");
+
+            const avisoTeste = modoOnline ? "" : `
+                <p class="aviso-teste">
+                    Modo de teste: as curtidas e os comentários estão sendo salvos apenas neste navegador.
+                    Para que todos vejam, configure o Firebase no começo do código (FIREBASE_CONFIG).
+                </p>
+            `;
+
+            const htmlComentarios = `
+                <section class="comentarios-secao">
+                    <h2 id="titulo-comentarios">Comentários</h2>
+                    <p class="comentarios-sub">Este espaço vale para as duas imagens de ${dados.empresa}.</p>
+
+                    ${avisoTeste}
+
+                    <form class="form-comentario" id="form-comentario" autocomplete="off">
+                        <input type="text" id="comentario-nome" placeholder="Seu nome" maxlength="40" required>
+                        <textarea id="comentario-texto" placeholder="Escreva seu comentário..." maxlength="500" required></textarea>
+                        <button type="submit" class="btn-comentar" id="botao-comentar">Comentar</button>
+                    </form>
+
+                    <div id="lista-comentarios"></div>
+                </section>
+            `;
+
+            conteudoGrupo.innerHTML = `
+                <div class="grupo-cabecalho">
+                    <h1>${dados.empresa}</h1>
+                </div>
+                ${htmlMonstros}
+                ${htmlComentarios}
+            `;
+
+            // CLIQUE NO TÓPICO: ABRE OU FECHA O TEXTO
+            // Todos começam FECHADOS. Só abrem quando a pessoa clica no título.
+            const botoesTopico = conteudoGrupo.querySelectorAll(".topico-cabecalho");
+            botoesTopico.forEach(botao => {
+                botao.addEventListener("click", () => {
+                    const topicoPai = botao.closest(".topico");
+                    const estaAberto = topicoPai.classList.toggle("aberto");
+                    botao.setAttribute("aria-expanded", estaAberto ? "true" : "false");
+                });
+            });
+
+            ativarCurtidas(idGrupo);
+            ativarComentarios(idGrupo);
+
+            modal.classList.add("aberto");
+            document.body.classList.add("modal-aberto");
+            modal.querySelector(".modal-conteudo").scrollTop = 0;
+        }
+
+
+        // FECHAR O MODAL
+        function fecharJanela() {
+            modal.classList.remove("aberto");
+            document.body.classList.remove("modal-aberto");
+            pararOuvintes();
+        }
+
+
+        // CLIQUE NOS CARDS
+        cards.forEach(card => {
+            card.addEventListener("click", () => {
+                const idGrupo = card.dataset.id;
+                abrirGrupo(idGrupo);
+            });
+        });
+
+
+        // FECHAR NO X
+        fecharModal.addEventListener("click", fecharJanela);
+
+
+        // FECHAR CLICANDO FORA
+        modal.addEventListener("click", (event) => {
+            if (event.target === modal) {
+                fecharJanela();
+            }
+        });
+
+
+        // FECHAR COM ESC
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                fecharJanela();
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>
+
+
+
+
